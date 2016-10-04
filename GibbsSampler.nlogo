@@ -11,6 +11,9 @@ globals
   variance_x
   variance_y
   covariance
+  full-path
+  sampler
+  estimate
 ]
 
 stamps-own [ steps ]
@@ -40,6 +43,8 @@ to setup
   set-default-shape stamps "circle 4"
   set-default-shape coors "line"
 
+  set full-path []
+
   setup-system
 
 end
@@ -48,7 +53,28 @@ to setup-system
 
   setup-coordinate-system
 
-  setup-agents
+  setup-sampler
+
+end
+
+to setup-sampler
+
+  create-points 1
+  [
+    set sampler self
+
+    set color black
+
+    hide-turtle
+
+    hatch-stamps 1
+    [
+      set color orange
+
+      set color red
+      set steps [ ]
+    ]
+  ]
 
 end
 
@@ -106,30 +132,9 @@ to setup-coordinate-system
 
 end
 
-to setup-agents
+to update-full-path [ el ]
 
-  create-points 1
-  [
-    set color black
-
-    set xcor get-uniform-el ( item 0 mins ) ( item 0 maxs )
-    set ycor get-uniform-el ( item 1 mins ) ( item 1 maxs )
-
-    stamp
-
-    hatch 1
-    [
-      set breed stamps
-
-      set color orange
-
-      stamp
-
-      set color red
-      set steps [ ]
-      pd
-    ]
-  ]
+  set full-path lput el full-path
 
 end
 
@@ -138,30 +143,69 @@ to go
   if ( ticks = num-samples )
   [
     ask points [ die ]
-    ask stamps [ retrace die ]
+    ask stamps [ show-turtle retrace die ]
     stop
   ]
 
-  ask points
+  ifelse ( ticks = 0 )
   [
-    set xcor ( get-target-normal-distribution-value 0 ycor )
-    set ycor ( get-target-normal-distribution-value 1 xcor )
-
-    stamp
-
-    if ( ticks < color-first-n-samples )
+    ask sampler
     [
+      set xcor get-uniform-el ( item 0 mins ) ( item 0 maxs )
+      set ycor get-uniform-el ( item 1 mins ) ( item 1 maxs )
+
+      stamp
+
+      update-full-path ( list xcor ycor )
+
+      show-turtle
+
       ask stamps [ set steps lput ( list [ xcor ] of myself [ ycor ] of myself ) steps ]
     ]
   ]
+  [
+    ask sampler
+    [
+      set xcor ( get-target-normal-distribution-value 0 ycor )
+      set ycor ( get-target-normal-distribution-value 1 xcor )
+
+      update-full-path ( list xcor ycor )
+
+      stamp
+
+      if ( ticks < color-first-n-samples )
+      [
+        ask stamps [ set steps lput ( list [ xcor ] of myself [ ycor ] of myself ) steps ]
+      ]
+    ]
+  ]
+
+  update-plot
 
   tick
 
 end
 
+to-report compare-points [ p1 p2 ]
+
+  report first p1 = first p2 and last p1 = last p2
+
+end
+
 to retrace
 
-  foreach steps [
+  let first-step first steps
+
+  set color orange
+
+  set xcor first first-step
+  set ycor last first-step
+
+  stamp
+
+  pd
+
+  foreach but-first steps [
 
     wait color-stamp-delay
 
@@ -217,11 +261,31 @@ to-report get-target-normal-distribution-value [ id chosenCor ]
   report random-normal meanCond varCond
 
 end
+
+to update-plot
+
+  if ( sampler != nobody )
+  [
+    let x [ xcor ] of sampler
+    let y [ ycor ] of sampler
+
+    ifelse ( ticks = 0 )
+    [
+      set estimate ( ifelse-value ( x >= 0 and y >= 0 ) [ 1 ] [ 0 ] )
+      plot estimate / ( ticks + 1 )
+    ]
+    [
+      set estimate ( estimate + ( ifelse-value ( x >= 0 and y >= 0 ) [ 1 ] [ 0 ] ) )
+      plot estimate / ( ticks + 1 )
+    ]
+  ]
+
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-487
+492
 10
-1055
+1060
 599
 16
 16
@@ -321,10 +385,10 @@ NIL
 1
 
 INPUTBOX
-16
-210
-171
-270
+13
+154
+168
+214
 standard-deviation-1
 2
 1
@@ -332,10 +396,10 @@ standard-deviation-1
 Number
 
 INPUTBOX
-17
-284
-172
-344
+14
+228
+169
+288
 standard-deviation-2
 2
 1
@@ -343,10 +407,10 @@ standard-deviation-2
 Number
 
 INPUTBOX
-14
-360
-169
-420
+11
+304
+166
+364
 standard-deviation-12
 3.2
 1
@@ -382,6 +446,24 @@ color-stamp-delay
 1
 NIL
 HORIZONTAL
+
+PLOT
+5
+372
+469
+631
+Monte Carlo estimate
+NIL
+NIL
+0.0
+10.0
+0.0
+0.5
+true
+false
+"set-plot-x-range 0 num-samples" ""
+PENS
+"default" 1.0 0 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
