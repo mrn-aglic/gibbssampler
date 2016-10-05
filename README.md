@@ -2,4 +2,4 @@
 
 This repository contains a NetLogo model of a Gibbs sampler based on the one I found implemented in matlab: https://theclevermachine.wordpress.com/2012/11/05/mcmc-the-gibbs-sampler/ .
 
-I created the model in an attempt to get a better understanding of how Gibbs sampling worked when I started learning about Boltzmann machines. 
+I created the model in an attempt to get a better understanding of how Gibbs sampling worked when I started to learn about Boltzmann machines. 
